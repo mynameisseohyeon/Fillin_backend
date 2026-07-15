@@ -2,6 +2,24 @@
 
 > FILL:IN은 직장인과 은퇴 전문가가 자신의 경험과 전문성을 수업으로 등록하고,  
 > 멘티가 필요한 수업과 시간을 직접 선택해 예약할 수 있는 멘토링 플랫폼입니다.
+<table>
+  <tr>
+    <td width="50%">
+      <img
+        src="https://github.com/user-attachments/assets/9cb023f1-f090-417f-94c4-4acfc9a4c8f5"
+        alt="FILL:IN 화면 1"
+        width="100%"
+      />
+    </td>
+    <td width="50%">
+      <img
+        src="https://github.com/user-attachments/assets/6ddefd5c-aa4e-4dba-bc1c-d4a0e421fdf8"
+        alt="FILL:IN 화면 2"
+        width="100%"
+      />
+    </td>
+  </tr>
+</table>
 
 | 항목 | 내용 |
 |---|---|
@@ -14,6 +32,7 @@
 
 
 ---
+
 
 ## Tech Stack
 Backend
@@ -37,6 +56,7 @@ Collaboration
 <p> <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" /> <img src="https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white" /> <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" /> <img src="https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white" /> <img src="https://img.shields.io/badge/Gemini_AI_Review-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" /> </p>
 
 ---
+
 ## 주요 기능
 
 | 기능        | 설명                                     |
@@ -46,11 +66,14 @@ Collaboration
 | 결제·정산     | Toss Payments 결제, 결제 금액 검증, 수업 완료 후 정산 |
 | 리뷰·프로필    | 멘토 경력 관리, 수강 완료 후 리뷰 및 평점 제공           |
 
+
 ---
+
 
 ## 담당 기능
 
 ### 일정 조회 및 캘린더 API
+<img width="60%" alt="25" src="https://github.com/user-attachments/assets/97eddf5a-cf0a-4537-b721-570358f42eee" />
 
 사용자가 멘토 또는 멘티로 참여한 일정을 목적별로 조회할 수 있도록
 전체·예정·과거 일정과 날짜별 캘린더 조회 API를 구현했습니다.
@@ -73,15 +96,20 @@ Collaboration
   → Page 응답 반환
 ```
 
-### API 문서화 및 협업
+### API 문서화 및 공통 예외처리
+<img width="60%" alt="24" src="https://github.com/user-attachments/assets/808b0cca-b9ba-4402-a93a-bd3ef0d10108" />
 
 일정 조회에 사용되는 날짜·제목·상태 파라미터를 Swagger에 문서화하고, <br/>
 프론트엔드에서 캘린더와 일정 목록을 연동할 수 있도록 API 사용 방식을 공유했습니다.
 
+프로젝트 전반에서 동일한 오류 형식을 사용할 수 있도록  
+`BusinessException`, `ErrorCode`, `GlobalExceptionHandler` 기반의 공통 예외 처리 구조를 사용했습니다.
 
 ---
 
 ## 트러블슈팅
+
+<img width="70%" alt="26" src="https://github.com/user-attachments/assets/20a6c6bd-9105-40b8-a296-10e3c3669689" />
 
 ### 1. UTC / KST 날짜 경계로 인한 일정 조회 불일치
 
@@ -102,33 +130,43 @@ Collaboration
 
 ---
 
-### 2. 전체·예정·과거 일정 조회 로직의 중복과 정렬 기준 불명확
+### 2. Schedule과 ScheduleTime 저장 과정의 데이터 불일치
 
 | PAAR | 내용 |
 |---|---|
-| **Problem** | 캘린더, 예정 일정, 과거 일정이 서로 다른 조회 목적을 가지지만 날짜·제목·상태 필터링 과정은 유사했습니다. 조회 API별로 같은 조건 처리 코드가 반복되면 수정 시 누락될 가능성이 있고, 예정·과거 일정의 정렬 기준도 명확하게 관리하기 어려웠습니다. |
-| **Approach** | API는 캘린더·예정·과거 조회로 분리하되, 실제 필터 파라미터 정리와 Repository 호출은 공통 메서드로 모으는 방식을 선택했습니다. |
-| **Action** | `getCalendarSchedules`, `getUpcomingSchedules`, `getPastSchedules`로 사용 목적을 분리하고, 공통 조회 로직을 `getFilteredPage`로 추출했습니다. 예정 일정은 현재 이후, 과거 일정은 현재 이전으로 범위를 제한하고 페이지네이션과 정렬 조건을 적용했습니다. |
-| **Result** | 조회 목적이 API 이름과 코드 구조에 드러나도록 개선했고, 날짜·제목·상태 필터의 중복 처리를 줄였습니다. 또한 사용자가 예정 일정은 가까운 순서로, 과거 일정은 최근 순서로 확인할 수 있는 기반을 마련했습니다. |
+| **Problem** | 예약의 기본 정보는 `Schedule`, 실제 수업 시간은 `ScheduleTime`에 나누어 저장됩니다. 두 저장 작업이 각각 처리되면 `Schedule` 저장 후 `ScheduleTime` 저장에 실패했을 때 시간 정보가 없는 불완전한 예약 데이터가 남을 수 있었습니다. |
+| **Approach** | 예약 정보와 수업 시간은 하나의 예약을 구성하는 데이터이므로, 두 저장 작업을 하나의 작업 단위로 처리해야 한다고 판단했습니다. |
+| **Action** | 예약 생성 로직에 `@Transactional`을 적용해 `Schedule`과 `ScheduleTime` 저장을 하나의 트랜잭션으로 묶었습니다. 두 저장이 모두 성공한 경우에만 커밋하고, 중간에 예외가 발생하면 전체 작업이 롤백되도록 구성했습니다. |
+| **Result** | 시간 정보가 없는 예약 데이터가 생성되는 문제를 방지하고, 예약 정보와 실제 수업 시간 사이의 데이터 정합성을 확보했습니다. |
 
 ```text
-Calendar  ─┐
-Upcoming  ─┼─→ 공통 필터 정리 → 기간을 Instant로 변환 → Repository 조회 → DTO 변환
-Past      ─┘
+Schedule 저장
+      ↓
+ScheduleTime 저장
+      ↓
+모두 성공 ─────────→ Commit
+      │
+      └─ 하나라도 실패 → Rollback
 ```
 
+
 ---
+
 
 ## Architecture
 
+<img width="60%" alt="스크린샷 2026-07-15 오후 9 28 24" src="https://github.com/user-attachments/assets/9473f883-cb5d-48a6-bec4-e92fd6ad0b77" />
 
 
 ---
+
 
 ## ERD
 
-<img width="1175" height="826" alt="FILL:IN ERD" src="https://github.com/user-attachments/assets/6ed7f8c5-44c2-4e5b-9d0e-19da7583fac2" />
+<img width="60%" alt="FILL:IN ERD" src="https://github.com/user-attachments/assets/6ed7f8c5-44c2-4e5b-9d0e-19da7583fac2" />
 
----
+`Member`가 등록한 `Lesson`을 기준으로 예약 가능한 시간·옵션·리뷰가 연결되고, <br/>
+멘티의 신청이 발생하면 `Schedule`이 생성됩니다.  <br/><br/>
 
-
+`Schedule`은 예약 상태와 참여자 정보를, <br/>
+`ScheduleTime`은 실제 수업 시작·종료 시간을 관리하며 결제 이력과 함께 예약 단위로 연결됩니다.
